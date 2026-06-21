@@ -1,0 +1,59 @@
+# 多因子策略框架配置
+# 敏感信息（密码、Token）请放在 secrets.yaml 中
+
+# 数据库配置（不含密码）
+database:
+  host: localhost
+  port: 3306
+  user: root
+  database: vnpy
+  charset: utf8mb4
+
+# Tushare 配置（不含 token）
+tushare:
+  timeout: 30
+
+# 数据路径
+paths:
+  project_root: ""
+  raw_data: "全A日K"
+  stock_basic: "stock_basic.csv"
+  cache_dir: "cache"
+  charts_dir: "charts"
+  log_dir: "logs"
+
+# 因子参数
+factors:
+  base_factor_names:
+    - bp_lr
+    - ep_deducted_ttm
+    - fcfp_ttm
+    - ocfp_ttm
+    - amount_mean_20d
+    - asset_ln
+    - revenues_ln
+    - currentratio
+    - ocf_to_operating_profit
+    - price_chg1200d
+    - price_chg120d
+    - price_chg180d
+    - capex2sales
+    - netincome_chg1y
+    - op_profit_chg1y
+  corr_thresh: 0.7
+  vif_thresh: 5.0
+  min_ic_months: 2
+
+# 回测参数
+backtest:
+  top_n: 10
+  rebalance_freq: 5
+  commission_rate: 0.0003
+  stamp_tax_rate: 0.001
+  slippage_rate: 0.0005
+
+# 日志参数
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  date_format: "%Y-%m-%d %H:%M:%S"

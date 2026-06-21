@@ -1,0 +1,40 @@
+2026-06-20 22:23:41 - root - INFO - Logging to file: C:\Users\Lenovo\Desktop\聚宽\logs\20260620\pipeline_222341.log
+2026-06-20 22:23:41 - strategy.Mined - INFO - ============================================================
+2026-06-20 22:23:41 - strategy.Mined - INFO - Strategy [Mined] pipeline started
+2026-06-20 22:23:41 - strategy.Mined - INFO - ============================================================
+2026-06-20 22:23:41 - strategy.Mined - INFO - Loading processed base factors and mined factors...
+2026-06-20 22:23:59 - strategy.Mined - INFO -   Merged data: 173490 rows, 348 dates
+2026-06-20 22:23:59 - strategy.Mined - INFO -   Base factors: 15, Mined factors: 12
+2026-06-20 22:23:59 - strategy.Mined - INFO - Preprocessing merged V2 data...
+2026-06-20 22:24:15 - strategy.Mined - INFO - IC analysis and factor selection...
+2026-06-20 22:24:34 - strategy.Mined - INFO - Selected 23 factors: ['asset_ln_trend20', 'netincome_chg1y_std5', 'revenues_ln_trend20', 'asset_ln_trend5', 'netincome_chg1y_trend5', 'op_profit_chg1y_trend20', 'fcfp_ttm', 'price_chg180d_trend20', 'capex2sales', 'netincome_chg1y_std20', 'op_profit_chg1y', 'capex2sales_trend5', 'revenues_ln_std20', 'fcfp_ttm_x_price_chg180d', 'fcfp_ttm_x_price_chg120d', 'price_chg120d', 'ocfp_ttm', 'revenues_ln', 'ocf_to_operating_profit', 'ep_deducted_ttm', 'asset_ln', 'amount_mean_20d', 'currentratio']
+2026-06-20 22:24:34 - strategy.Mined - INFO - Aligning factor directions (IC < 0 -> flip)...
+2026-06-20 22:24:34 - strategy.Mined - INFO -   Flipped netincome_chg1y_std5 (IC=-0.0254)
+2026-06-20 22:24:34 - strategy.Mined - INFO -   Flipped price_chg180d_trend20 (IC=-0.0290)
+2026-06-20 22:24:34 - strategy.Mined - INFO -   Flipped netincome_chg1y_std20 (IC=-0.0191)
+2026-06-20 22:24:34 - strategy.Mined - INFO -   Flipped capex2sales_trend5 (IC=-0.0252)
+2026-06-20 22:24:34 - strategy.Mined - INFO -   Flipped revenues_ln_std20 (IC=-0.0139)
+2026-06-20 22:24:34 - strategy.Mined - INFO -   Flipped price_chg120d (IC=-0.0159)
+2026-06-20 22:24:34 - strategy.Mined - INFO -   Flipped amount_mean_20d (IC=-0.0007)
+2026-06-20 22:24:34 - strategy.Mined - INFO - Training LightGBM model...
+2026-06-20 22:24:36 - strategy.Mined - INFO -   Final weights: {'asset_ln_trend20': 0.03941055452657453, 'netincome_chg1y_std5': 0.03385615577061476, 'revenues_ln_trend20': 0.04194576277649873, 'asset_ln_trend5': 0.03592805955707175, 'netincome_chg1y_trend5': 0.03644521980982413, 'op_profit_chg1y_trend20': 0.038576896691986835, 'fcfp_ttm': 0.07333632897419796, 'price_chg180d_trend20': 0.04980553163079808, 'capex2sales': 0.047443459117965665, 'netincome_chg1y_std20': 0.04634642468511631, 'op_profit_chg1y': 0.04751256602919882, 'capex2sales_trend5': 0.0331677781776678, 'revenues_ln_std20': 0.04934178019993079, 'fcfp_ttm_x_price_chg180d': 0.043812675890912, 'fcfp_ttm_x_price_chg120d': 0.03811167203446555, 'price_chg120d': 0.04631997892696396, 'ocfp_ttm': 0.04044179422134211, 'revenues_ln': 0.04227682274348691, 'ocf_to_operating_profit': 0.047557734178783985, 'ep_deducted_ttm': 0.03710777479015639, 'asset_ln': 0.04285976429943298, 'amount_mean_20d': 0.047687524214569496, 'currentratio': 0.04070774075244054}
+2026-06-20 22:24:36 - strategy.Mined - INFO - Calculating stock scores...
+2026-06-20 22:24:59 - strategy.Mined - INFO - Saved results to stock_score_daily_v2
+2026-06-20 22:24:59 - strategy.Mined - INFO -   Total stocks: 500
+2026-06-20 22:24:59 - strategy.Mined - INFO -   Total dates: 348
+2026-06-20 22:25:00 - strategy.Mined - INFO - 
+Latest date 2026-06-12 Top10:
+2026-06-20 22:25:00 - strategy.Mined - INFO -   000733.SZ: score=0.0606, rank=1
+2026-06-20 22:25:00 - strategy.Mined - INFO -   601666.SH: score=0.0297, rank=2
+2026-06-20 22:25:00 - strategy.Mined - INFO -   601615.SH: score=0.0288, rank=3
+2026-06-20 22:25:00 - strategy.Mined - INFO -   300567.SZ: score=0.0209, rank=4
+2026-06-20 22:25:00 - strategy.Mined - INFO -   002984.SZ: score=0.0173, rank=5
+2026-06-20 22:25:00 - strategy.Mined - INFO -   600498.SH: score=0.0163, rank=6
+2026-06-20 22:25:00 - strategy.Mined - INFO -   688361.SH: score=0.0162, rank=7
+2026-06-20 22:25:00 - strategy.Mined - INFO -   300390.SZ: score=0.0146, rank=8
+2026-06-20 22:25:00 - strategy.Mined - INFO -   601179.SH: score=0.0135, rank=9
+2026-06-20 22:25:00 - strategy.Mined - INFO -   300054.SZ: score=0.0117, rank=10
+2026-06-20 22:25:00 - strategy.Mined - INFO - Generating charts...
+2026-06-20 22:25:41 - strategy.Mined - INFO - ============================================================
+2026-06-20 22:25:41 - strategy.Mined - INFO - Strategy [Mined] completed in 120.1s
+2026-06-20 22:25:41 - strategy.Mined - INFO - ============================================================

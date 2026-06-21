@@ -1,0 +1,54 @@
+2026-06-20 21:59:19 - root - INFO - Logging to file: C:\Users\Lenovo\Desktop\聚宽\logs\20260620\pipeline_215919.log
+2026-06-20 21:59:19 - strategy.Mined - INFO - ============================================================
+2026-06-20 21:59:19 - strategy.Mined - INFO - Strategy [Mined] pipeline started
+2026-06-20 21:59:19 - strategy.Mined - INFO - ============================================================
+2026-06-20 21:59:19 - strategy.Mined - INFO - Loading processed base factors and mined factors...
+2026-06-20 21:59:50 - strategy.Mined - INFO -   Merged data: 173490 rows, 348 dates
+2026-06-20 21:59:50 - strategy.Mined - INFO -   Base factors: 15, Mined factors: 12
+2026-06-20 21:59:50 - strategy.Mined - INFO - Preprocessing merged V2 data...
+2026-06-20 21:59:51 - strategy.Mined - ERROR - Strategy [Mined] failed: (1054, "Unknown column 'future_5d_return' in 'field list'")
+Traceback (most recent call last):
+  File "C:\Users\Lenovo\Desktop\聚宽\factor_engine\strategy\base.py", line 260, in run
+    self.preprocess()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\Lenovo\Desktop\聚宽\factor_engine\strategy\mined.py", line 71, in preprocess
+    save_dataframe(self.df_proc[save_cols], self.get_processed_table(), if_exists='replace')
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lenovo\Desktop\聚宽\factor_engine\data\db.py", line 97, in save_dataframe
+    cur.executemany(sql, batch)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\vnstudio2026\Lib\site-packages\pymysql\cursors.py", line 182, in executemany
+    return self._do_execute_many(
+           ~~~~~~~~~~~~~~~~~~~~~^
+        q_prefix,
+        ^^^^^^^^^
+    ...<4 lines>...
+        self._get_db().encoding,
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\vnstudio2026\Lib\site-packages\pymysql\cursors.py", line 220, in _do_execute_many
+    rows += self.execute(sql + postfix)
+            ~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "D:\vnstudio2026\Lib\site-packages\pymysql\cursors.py", line 153, in execute
+    result = self._query(query)
+  File "D:\vnstudio2026\Lib\site-packages\pymysql\cursors.py", line 322, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\vnstudio2026\Lib\site-packages\pymysql\connections.py", line 575, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\vnstudio2026\Lib\site-packages\pymysql\connections.py", line 826, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\vnstudio2026\Lib\site-packages\pymysql\connections.py", line 1203, in read
+    first_packet = self.connection._read_packet()
+  File "D:\vnstudio2026\Lib\site-packages\pymysql\connections.py", line 782, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\vnstudio2026\Lib\site-packages\pymysql\protocol.py", line 219, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\vnstudio2026\Lib\site-packages\pymysql\err.py", line 150, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'future_5d_return' in 'field list'")

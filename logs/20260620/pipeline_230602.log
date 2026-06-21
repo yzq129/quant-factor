@@ -1,0 +1,34 @@
+2026-06-20 23:06:02 - root - INFO - Logging to file: C:\Users\Lenovo\Desktop\聚宽\logs\20260620\pipeline_230602.log
+2026-06-20 23:06:02 - strategy.Pure_IC - INFO - ============================================================
+2026-06-20 23:06:02 - strategy.Pure_IC - INFO - Strategy [Pure_IC] pipeline started
+2026-06-20 23:06:02 - strategy.Pure_IC - INFO - ============================================================
+2026-06-20 23:06:02 - strategy.Pure_IC - INFO - Loading raw data from database...
+2026-06-20 23:06:05 - strategy.Pure_IC - INFO -   Raw data: 175490 rows, 352 dates
+2026-06-20 23:06:05 - strategy.Pure_IC - INFO - Preprocessing data (MAD -> market-cap neutralize -> ZScore)...
+2026-06-20 23:06:26 - strategy.Pure_IC - INFO -   Processed data: 175490 rows
+2026-06-20 23:06:38 - strategy.Pure_IC - INFO - IC analysis and factor selection...
+2026-06-20 23:06:46 - strategy.Pure_IC - INFO - Selected 11 factors: ['fcfp_ttm', 'capex2sales', 'op_profit_chg1y', 'price_chg120d', 'ocfp_ttm', 'revenues_ln', 'ocf_to_operating_profit', 'ep_deducted_ttm', 'asset_ln', 'amount_mean_20d', 'currentratio']
+2026-06-20 23:06:46 - strategy.Pure_IC - INFO - Aligning factor directions (IC < 0 -> flip)...
+2026-06-20 23:06:46 - strategy.Pure_IC - INFO -   Flipped price_chg120d (IC=-0.0159)
+2026-06-20 23:06:46 - strategy.Pure_IC - INFO -   Flipped amount_mean_20d (IC=-0.0007)
+2026-06-20 23:06:46 - strategy.Pure_IC - INFO - ML disabled, using IC weights directly
+2026-06-20 23:06:46 - strategy.Pure_IC - INFO - Calculating stock scores...
+2026-06-20 23:06:59 - strategy.Pure_IC - INFO - Saved results to stock_score_daily_pure_ic
+2026-06-20 23:06:59 - strategy.Pure_IC - INFO -   Total stocks: 500
+2026-06-20 23:06:59 - strategy.Pure_IC - INFO -   Total dates: 352
+2026-06-20 23:06:59 - strategy.Pure_IC - INFO - 
+Latest date 2026-06-18 Top10:
+2026-06-20 23:06:59 - strategy.Pure_IC - INFO -   601997.SH: score=1.0977, rank=1
+2026-06-20 23:06:59 - strategy.Pure_IC - INFO -   002966.SZ: score=0.9686, rank=2
+2026-06-20 23:06:59 - strategy.Pure_IC - INFO -   601061.SH: score=0.9228, rank=3
+2026-06-20 23:06:59 - strategy.Pure_IC - INFO -   601665.SH: score=0.9052, rank=4
+2026-06-20 23:06:59 - strategy.Pure_IC - INFO -   688235.SH: score=0.8846, rank=5
+2026-06-20 23:06:59 - strategy.Pure_IC - INFO -   000783.SZ: score=0.8175, rank=6
+2026-06-20 23:06:59 - strategy.Pure_IC - INFO -   000987.SZ: score=0.7645, rank=7
+2026-06-20 23:06:59 - strategy.Pure_IC - INFO -   600801.SH: score=0.7320, rank=8
+2026-06-20 23:06:59 - strategy.Pure_IC - INFO -   000709.SZ: score=0.7285, rank=9
+2026-06-20 23:06:59 - strategy.Pure_IC - INFO -   002128.SZ: score=0.7222, rank=10
+2026-06-20 23:06:59 - strategy.Pure_IC - INFO - Generating charts...
+2026-06-20 23:07:16 - strategy.Pure_IC - INFO - ============================================================
+2026-06-20 23:07:16 - strategy.Pure_IC - INFO - Strategy [Pure_IC] completed in 73.9s
+2026-06-20 23:07:16 - strategy.Pure_IC - INFO - ============================================================

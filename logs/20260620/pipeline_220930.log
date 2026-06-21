@@ -1,0 +1,35 @@
+2026-06-20 22:09:30 - root - INFO - Logging to file: C:\Users\Lenovo\Desktop\聚宽\logs\20260620\pipeline_220930.log
+2026-06-20 22:09:30 - strategy.Mined - INFO - ============================================================
+2026-06-20 22:09:30 - strategy.Mined - INFO - Strategy [Mined] pipeline started
+2026-06-20 22:09:30 - strategy.Mined - INFO - ============================================================
+2026-06-20 22:09:30 - strategy.Mined - INFO - Loading processed base factors and mined factors...
+2026-06-20 22:09:48 - strategy.Mined - INFO -   Merged data: 173490 rows, 348 dates
+2026-06-20 22:09:48 - strategy.Mined - INFO -   Base factors: 15, Mined factors: 12
+2026-06-20 22:09:48 - strategy.Mined - INFO - Preprocessing merged V2 data...
+2026-06-20 22:10:03 - strategy.Mined - INFO - IC analysis and factor selection...
+2026-06-20 22:10:14 - strategy.Mined - INFO - Selected 11 factors: ['fcfp_ttm', 'capex2sales', 'op_profit_chg1y', 'price_chg120d', 'ocfp_ttm', 'revenues_ln', 'ocf_to_operating_profit', 'ep_deducted_ttm', 'asset_ln', 'amount_mean_20d', 'currentratio']
+2026-06-20 22:10:14 - strategy.Mined - INFO - Aligning factor directions (IC < 0 -> flip)...
+2026-06-20 22:10:14 - strategy.Mined - INFO -   Flipped price_chg120d (IC=-0.0159)
+2026-06-20 22:10:14 - strategy.Mined - INFO -   Flipped amount_mean_20d (IC=-0.0007)
+2026-06-20 22:10:14 - strategy.Mined - INFO - Training LightGBM model...
+2026-06-20 22:10:15 - strategy.Mined - INFO -   Final weights: {'fcfp_ttm': 0.11636719864951323, 'capex2sales': 0.09931481319071342, 'op_profit_chg1y': 0.08881102716288504, 'price_chg120d': 0.09213242990551361, 'ocfp_ttm': 0.08822266694910583, 'revenues_ln': 0.09055707754972978, 'ocf_to_operating_profit': 0.08572312728248913, 'ep_deducted_ttm': 0.08835527772839936, 'asset_ln': 0.07729480679767109, 'amount_mean_20d': 0.09035942379498707, 'currentratio': 0.08286215098899244}
+2026-06-20 22:10:15 - strategy.Mined - INFO - Calculating stock scores...
+2026-06-20 22:10:28 - strategy.Mined - INFO - Saved results to stock_score_daily_v2
+2026-06-20 22:10:28 - strategy.Mined - INFO -   Total stocks: 500
+2026-06-20 22:10:28 - strategy.Mined - INFO -   Total dates: 348
+2026-06-20 22:10:28 - strategy.Mined - INFO - 
+Latest date 2026-06-12 Top10:
+2026-06-20 22:10:28 - strategy.Mined - INFO -   002432.SZ: score=0.0769, rank=1
+2026-06-20 22:10:28 - strategy.Mined - INFO -   000539.SZ: score=0.0354, rank=2
+2026-06-20 22:10:28 - strategy.Mined - INFO -   000733.SZ: score=0.0319, rank=3
+2026-06-20 22:10:28 - strategy.Mined - INFO -   603688.SH: score=0.0239, rank=4
+2026-06-20 22:10:28 - strategy.Mined - INFO -   600498.SH: score=0.0170, rank=5
+2026-06-20 22:10:28 - strategy.Mined - INFO -   600879.SH: score=0.0170, rank=6
+2026-06-20 22:10:28 - strategy.Mined - INFO -   688301.SH: score=0.0160, rank=7
+2026-06-20 22:10:28 - strategy.Mined - INFO -   688387.SH: score=0.0146, rank=8
+2026-06-20 22:10:28 - strategy.Mined - INFO -   300857.SZ: score=0.0137, rank=9
+2026-06-20 22:10:28 - strategy.Mined - INFO -   002080.SZ: score=0.0129, rank=10
+2026-06-20 22:10:28 - strategy.Mined - INFO - Generating charts...
+2026-06-20 22:10:48 - strategy.Mined - INFO - ============================================================
+2026-06-20 22:10:48 - strategy.Mined - INFO - Strategy [Mined] completed in 78.5s
+2026-06-20 22:10:48 - strategy.Mined - INFO - ============================================================
