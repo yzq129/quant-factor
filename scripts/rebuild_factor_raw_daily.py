@@ -283,7 +283,13 @@ def compute_derived_factors(df):
     return df
 
 
-def main():
+def main(start_date=None):
+    if start_date is None:
+        # 默认从 2025-01-02 开始，避开 2024 下半年数据不足期
+        start_date = date(2025, 1, 2)
+    else:
+        start_date = pd.to_datetime(start_date).date()
+
     log("Loading CSI500 universe history...")
     universe_df = load_universe()
     log(f"  universe dates: {universe_df['trade_date'].min()} ~ {universe_df['trade_date'].max()}")
@@ -299,9 +305,13 @@ def main():
     fin_dfs = load_financials()
 
     trade_dates = sorted(price_df['trade_date'].dt.date.unique())
-    log("Expanding financials to daily...")
+    trade_dates = [d for d in trade_dates if d >= start_date]
+    log(f"Expanding financials to daily from {start_date} ({len(trade_dates)} dates)...")
     fin_daily = expand_financials_to_daily(fin_dfs, trade_dates)
     log(f"  fin_daily: {len(fin_daily)} rows")
+
+    # 让 universe 也限制在 start_date 之后
+    universe_df = universe_df[universe_df['trade_date'] >= start_date]
 
     log("Calculating factors...")
     df = calc_factors(price_df, fin_daily, universe_df)
