@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Data & cache
+cache/*.pkl
+cache/*.zip
+*.zip
+
+# Logs & results
+logs/
+backtest_results/
+charts/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
