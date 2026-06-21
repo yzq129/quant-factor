@@ -21,14 +21,14 @@ class BenchmarkEngine:
         self.logger = get_logger(f"backtest.{name}")
         self.close_df = None
     
-    def load_close_prices(self, codes, zip_paths=None):
-        """加载收盘价"""
+    def load_prices(self, codes, zip_paths=None):
+        """加载开盘价、收盘价"""
         if zip_paths is None:
             zip_paths = self.config.get('data.local_zip_paths', [
                 '全A日K/2024.zip', '全A日K/2025.zip', '全A日K/2026.zip'
             ])
         
-        self.logger.info(f"Loading close prices for benchmark [{self.name}]...")
+        self.logger.info(f"Loading prices for benchmark [{self.name}]...")
         codes = set(codes)
         all_data = []
         
@@ -48,7 +48,7 @@ class BenchmarkEngine:
                 for fname, code in target_files:
                     with z.open(fname) as f:
                         df = pd.read_csv(f)
-                    df = df[['datetime', 'close']].copy()
+                    df = df[['datetime', 'open', 'close']].copy()
                     df['code'] = code
                     df['datetime'] = pd.to_datetime(df['datetime'])
                     all_data.append(df)
@@ -59,6 +59,10 @@ class BenchmarkEngine:
         self.close_df = df
         self.logger.info(f"  Loaded {len(df)} price records, {df['code'].nunique()} stocks")
         return df
+    
+    def load_close_prices(self, codes, zip_paths=None):
+        """兼容旧入口"""
+        return self.load_prices(codes, zip_paths)
     
     def run_equal_weight(self, score_df, rebalance_dates=None, rebalance_freq=5):
         """
@@ -83,9 +87,11 @@ class BenchmarkEngine:
             rebalance_dates = sorted(pd.to_datetime(rebalance_dates))
         
         if self.close_df is None:
-            self.load_close_prices(score_df['code'].unique())
+            self.load_prices(score_df['code'].unique())
         
-        price_pivot = self.close_df.pivot(index='trade_date', columns='code', values='close')
+        all_dates = sorted(score_df['trade_date'].unique())
+        next_trade_date = dict(zip(all_dates[:-1], all_dates[1:]))
+        open_pivot = self.close_df.pivot(index='trade_date', columns='code', values='open')
         
         records = []
         nav = 1.0
@@ -95,13 +101,18 @@ class BenchmarkEngine:
             if i + 1 < len(rebalance_dates):
                 next_reb_date = rebalance_dates[i + 1]
             else:
-                next_reb_date = sorted(score_df['trade_date'].unique())[-1]
+                next_reb_date = all_dates[-1]
+            
+            buy_date = next_trade_date.get(reb_date)
+            sell_date = next_trade_date.get(next_reb_date)
+            if buy_date is None or sell_date is None:
+                continue
             
             valid_rets = []
             for code in universe:
-                if code in price_pivot.columns:
-                    buy = price_pivot.loc[reb_date, code] if reb_date in price_pivot.index else np.nan
-                    sell = price_pivot.loc[next_reb_date, code] if next_reb_date in price_pivot.index else np.nan
+                if code in open_pivot.columns:
+                    buy = open_pivot.loc[buy_date, code] if buy_date in open_pivot.index else np.nan
+                    sell = open_pivot.loc[sell_date, code] if sell_date in open_pivot.index else np.nan
                     if pd.notna(buy) and pd.notna(sell) and buy > 0:
                         valid_rets.append(sell / buy - 1)
             
@@ -110,7 +121,8 @@ class BenchmarkEngine:
                 nav *= (1 + ret)
                 records.append({
                     'rebalance_date': reb_date,
-                    'next_date': next_reb_date,
+                    'buy_date': buy_date,
+                    'sell_date': sell_date,
                     'n_holdings': len(valid_rets),
                     'gross_return': ret,
                     'net_return': ret,

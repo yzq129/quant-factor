@@ -63,8 +63,8 @@ class BacktestEngine:
     def sell_cost(self):
         return self.costs['commission'] + self.costs['stamp_tax'] + self.costs['slippage']
     
-    def load_close_prices(self, codes=None, zip_paths=None):
-        """从本地 zip 读取收盘价"""
+    def load_prices(self, codes=None, zip_paths=None):
+        """从本地 zip 读取开盘价、收盘价"""
         if codes is None:
             codes = set(self.score_df['code'].unique())
         else:
@@ -75,7 +75,7 @@ class BacktestEngine:
                 '全A日K/2024.zip', '全A日K/2025.zip', '全A日K/2026.zip'
             ])
         
-        self.logger.info("Loading close prices from local zips...")
+        self.logger.info("Loading prices (open/close) from local zips...")
         all_data = []
         
         for zip_path in zip_paths:
@@ -95,13 +95,13 @@ class BacktestEngine:
                 for fname, code in target_files:
                     with z.open(fname) as f:
                         df = pd.read_csv(f)
-                    df = df[['datetime', 'close']].copy()
+                    df = df[['datetime', 'open', 'close']].copy()
                     df['code'] = code
                     df['datetime'] = pd.to_datetime(df['datetime'])
                     all_data.append(df)
         
         if not all_data:
-            raise ValueError("No close price data loaded")
+            raise ValueError("No price data loaded")
         
         df = pd.concat(all_data, ignore_index=True)
         df = df.rename(columns={'datetime': 'trade_date'})
@@ -110,24 +110,32 @@ class BacktestEngine:
         self.logger.info(f"  Loaded {len(df)} price records, {df['code'].nunique()} stocks")
         return df
     
+    def load_close_prices(self, codes=None, zip_paths=None):
+        """兼容旧入口"""
+        return self.load_prices(codes, zip_paths)
+    
     def run(self):
-        """运行回测"""
+        """运行回测：T日收盘选股，T+1开盘买入；下一调仓日T+5收盘选股，T+6开盘卖出"""
         if self.close_df is None:
-            self.load_close_prices()
+            self.load_prices()
         
         self.logger.info(f"Running backtest [{self.strategy_name}]...")
         self.logger.info(f"  Top N: {self.top_n}, Rebalance freq: {self.rebalance_freq} days")
         self.logger.info(f"  Buy cost: {self.buy_cost:.4%}, Sell cost: {self.sell_cost:.4%}")
+        self.logger.info("  Execution: T+1 open buy / next_reb T+1 open sell")
         
         score_df = self.score_df.copy()
-        close_df = self.close_df.copy()
+        price_df = self.close_df.copy()
         
         all_dates = sorted(score_df['trade_date'].unique())
         rebalance_dates = all_dates[::self.rebalance_freq]
         
         self.logger.info(f"  Total dates: {len(all_dates)}, Rebalance dates: {len(rebalance_dates)}")
         
-        price_pivot = close_df.pivot(index='trade_date', columns='code', values='close')
+        # 建立调仓日到下一交易日的映射
+        next_trade_date = dict(zip(all_dates[:-1], all_dates[1:]))
+        
+        open_pivot = price_df.pivot(index='trade_date', columns='code', values='open')
         
         records = []
         nav = 1.0
@@ -148,6 +156,14 @@ class BacktestEngine:
             else:
                 next_reb_date = all_dates[-1]
             
+            # 买入日 = T+1，卖出日 = next_reb_date + 1
+            buy_date = next_trade_date.get(reb_date)
+            sell_date = next_trade_date.get(next_reb_date)
+            
+            if buy_date is None or sell_date is None:
+                self.logger.warning(f"  Skip rebalance {reb_date}: no next trade date")
+                continue
+            
             # 换手率
             if prev_holdings:
                 sold = prev_holdings - set(current_top)
@@ -161,9 +177,9 @@ class BacktestEngine:
             valid_codes = []
             period_returns = []
             for code in current_top:
-                if code in price_pivot.columns:
-                    buy_price = price_pivot.loc[reb_date, code] if reb_date in price_pivot.index else np.nan
-                    sell_price = price_pivot.loc[next_reb_date, code] if next_reb_date in price_pivot.index else np.nan
+                if code in open_pivot.columns:
+                    buy_price = open_pivot.loc[buy_date, code] if buy_date in open_pivot.index else np.nan
+                    sell_price = open_pivot.loc[sell_date, code] if sell_date in open_pivot.index else np.nan
                     if pd.notna(buy_price) and pd.notna(sell_price) and buy_price > 0:
                         ret = sell_price / buy_price - 1
                         valid_codes.append(code)
@@ -179,7 +195,8 @@ class BacktestEngine:
             
             records.append({
                 'rebalance_date': reb_date,
-                'next_date': next_reb_date,
+                'buy_date': buy_date,
+                'sell_date': sell_date,
                 'holdings': ','.join(valid_codes),
                 'n_holdings': len(valid_codes),
                 'turnover': turnover,
