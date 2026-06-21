@@ -18,7 +18,7 @@ from factor_engine.ic_analysis import (
     calc_ic_series, calc_ic_stats, select_factors,
     calc_factor_correlation, FACTOR_CATEGORIES
 )
-from factor_engine.ml_model import prepare_ml_data, train_model, calc_score
+from factor_engine.ml_model import prepare_ml_data, train_model, train_rolling_models, calc_score
 from factor_engine.visualization.charts import plot_ic_analysis
 
 
@@ -37,6 +37,7 @@ class BaseStrategy(ABC):
         self.weights = None
         self.ic_means = None
         self.model = None
+        self.models = {}
         self.ml_weights = None
         self.final_weights = None
         self.df_score = None
@@ -143,19 +144,36 @@ class BaseStrategy(ABC):
                     self.logger.info(f"  Flipped {fac} (IC={self.ic_means[fac]:.4f})")
     
     def train_ml_model(self):
-        """训练 LightGBM 模型（可选）"""
+        """训练 LightGBM 模型（滚动训练，避免未来函数）"""
         if not self.use_ml():
             self.model = None
             self.ml_weights = None
+            self.models = {}
             self.final_weights = self.weights.copy()
             self.logger.info("ML disabled, using IC weights directly")
             return
         
-        self.logger.info("Training LightGBM model...")
-        df_ml, feature_cols = prepare_ml_data(self.df_proc, self.selected)
-        self.model, self.ml_weights = train_model(df_ml, feature_cols)
+        min_train_days = self.config.get('ml.min_train_days', 60)
+        retrain_freq = self.config.get('ml.retrain_freq', 5)
         
-        # 合并权重
+        self.logger.info("Training rolling LightGBM models...")
+        df_ml, feature_cols = prepare_ml_data(self.df_proc, self.selected)
+        self.models = train_rolling_models(
+            df_ml, feature_cols,
+            min_train_days=min_train_days,
+            retrain_freq=retrain_freq
+        )
+        
+        # 用最后一个有效模型作为 representative（用于图表和日志）
+        if self.models:
+            last_date = sorted(self.models.keys())[-1]
+            self.model, self.ml_weights = self.models[last_date]
+            self.logger.info(f"  Trained {len(self.models)} rolling models, last: {last_date}")
+        else:
+            self.model = None
+            self.ml_weights = None
+        
+        # 合并权重（仅用于日志展示，实际打分仍按日期对应模型）
         self.final_weights = {}
         for fac in self.selected:
             neu_col = f'{fac}_neu'
@@ -168,27 +186,43 @@ class BaseStrategy(ABC):
         if total_w > 0:
             self.final_weights = {k: v / total_w for k, v in self.final_weights.items()}
         
-        self.logger.info(f"  Final weights: {self.final_weights}")
+        self.logger.info(f"  Representative final weights: {self.final_weights}")
     
     def calc_scores(self):
-        """计算股票得分"""
+        """计算股票得分（按日期使用对应滚动模型）"""
         self.logger.info("Calculating stock scores...")
-        self.df_score = calc_score(
-            self.df_proc,
-            self.selected,
-            self.final_weights,
-            use_ml=(self.use_ml() and self.model is not None),
-            model=self.model
-        )
+        
+        # 统一日期格式
+        self.df_proc['_date_str'] = pd.to_datetime(self.df_proc['trade_date']).dt.strftime('%Y-%m-%d')
+        
+        score_results = []
+        for date_str, g in self.df_proc.groupby('_date_str'):
+            # 找到该日期可用的最新模型
+            model = None
+            if self.use_ml() and self.models:
+                available_dates = [d for d in self.models.keys() if d <= date_str]
+                if available_dates:
+                    model = self.models[max(available_dates)][0]
+            
+            if model is not None:
+                g_scored = calc_score(g, self.selected, self.final_weights, use_ml=True, model=model)
+            else:
+                # 数据不足时回退到 IC 线性权重
+                g_scored = calc_score(g, self.selected, self.weights, use_ml=False, model=None)
+            
+            score_results.append(g_scored)
+        
+        self.df_score = pd.concat(score_results, ignore_index=True)
+        self.df_score = self.df_score.drop(columns=['_date_str'], errors='ignore')
         
         # 按日期分组排名
-        score_results = []
+        rank_results = []
         for date, g in self.df_score.groupby('trade_date'):
             g = g.sort_values('score', ascending=False).reset_index(drop=True)
             g['rank_in_pool'] = range(1, len(g) + 1)
-            score_results.append(g[['trade_date', 'code', 'score', 'rank_in_pool']])
+            rank_results.append(g[['trade_date', 'code', 'score', 'rank_in_pool']])
         
-        self.df_score = pd.concat(score_results, ignore_index=True)
+        self.df_score = pd.concat(rank_results, ignore_index=True)
     
     def save_results(self):
         """保存 IC、入选因子、得分结果"""

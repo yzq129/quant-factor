@@ -44,6 +44,14 @@ factors:
   vif_thresh: 5.0
   min_ic_months: 2
 
+# 机器学习参数
+ml:
+  use_ml: true
+  # 滚动训练最小历史交易日数（不足时用线性权重 fallback）
+  min_train_days: 60
+  # 与回测调仓频率对齐，每 N 个交易日重新训练一次模型
+  retrain_freq: 5
+
 # 回测参数
 backtest:
   top_n: 10

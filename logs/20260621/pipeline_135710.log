@@ -1,0 +1,36 @@
+2026-06-21 13:57:10 - root - INFO - Logging to file: C:\Users\Lenovo\Desktop\聚宽_v2\logs\20260621\pipeline_135710.log
+2026-06-21 13:57:10 - strategy.Original - INFO - ============================================================
+2026-06-21 13:57:10 - strategy.Original - INFO - Strategy [Original] pipeline started
+2026-06-21 13:57:10 - strategy.Original - INFO - ============================================================
+2026-06-21 13:57:10 - strategy.Original - INFO - Loading raw data from database...
+2026-06-21 13:57:14 - strategy.Original - INFO -   Raw data: 175490 rows, 352 dates
+2026-06-21 13:57:14 - strategy.Original - INFO - Preprocessing data (MAD -> market-cap neutralize -> ZScore)...
+2026-06-21 13:57:41 - strategy.Original - INFO -   Processed data: 175490 rows
+2026-06-21 13:57:53 - strategy.Original - INFO - IC analysis and factor selection...
+2026-06-21 13:58:03 - strategy.Original - INFO - Selected 11 factors: ['fcfp_ttm', 'capex2sales', 'op_profit_chg1y', 'price_chg120d', 'ocfp_ttm', 'revenues_ln', 'ocf_to_operating_profit', 'ep_deducted_ttm', 'asset_ln', 'amount_mean_20d', 'currentratio']
+2026-06-21 13:58:03 - strategy.Original - INFO - Aligning factor directions (IC < 0 -> flip)...
+2026-06-21 13:58:03 - strategy.Original - INFO -   Flipped price_chg120d (IC=-0.0159)
+2026-06-21 13:58:03 - strategy.Original - INFO -   Flipped amount_mean_20d (IC=-0.0007)
+2026-06-21 13:58:03 - strategy.Original - INFO - Training rolling LightGBM models...
+2026-06-21 13:58:17 - strategy.Original - INFO -   Trained 57 rolling models, last: 2026-06-03
+2026-06-21 13:58:17 - strategy.Original - INFO -   Representative final weights: {'fcfp_ttm': 0.16980206150756216, 'capex2sales': 0.10622936974521795, 'op_profit_chg1y': 0.050402487988404805, 'price_chg120d': 0.07515660783861985, 'ocfp_ttm': 0.05192535938386114, 'revenues_ln': 0.06404595524325452, 'ocf_to_operating_profit': 0.07960754615696124, 'ep_deducted_ttm': 0.11212295695521098, 'asset_ln': 0.09243275696476357, 'amount_mean_20d': 0.15628189097000147, 'currentratio': 0.04199300724614235}
+2026-06-21 13:58:17 - strategy.Original - INFO - Calculating stock scores...
+2026-06-21 13:58:32 - strategy.Original - INFO - Saved results to stock_score_daily
+2026-06-21 13:58:32 - strategy.Original - INFO -   Total stocks: 500
+2026-06-21 13:58:32 - strategy.Original - INFO -   Total dates: 352
+2026-06-21 13:58:32 - strategy.Original - INFO - 
+Latest date 2026-06-18 Top10:
+2026-06-21 13:58:32 - strategy.Original - INFO -   002155.SZ: score=0.0188, rank=1
+2026-06-21 13:58:32 - strategy.Original - INFO -   603688.SH: score=0.0117, rank=2
+2026-06-21 13:58:32 - strategy.Original - INFO -   002958.SZ: score=0.0113, rank=3
+2026-06-21 13:58:32 - strategy.Original - INFO -   000733.SZ: score=0.0110, rank=4
+2026-06-21 13:58:32 - strategy.Original - INFO -   002465.SZ: score=0.0087, rank=5
+2026-06-21 13:58:32 - strategy.Original - INFO -   000062.SZ: score=0.0087, rank=6
+2026-06-21 13:58:32 - strategy.Original - INFO -   000060.SZ: score=0.0086, rank=7
+2026-06-21 13:58:32 - strategy.Original - INFO -   300058.SZ: score=0.0086, rank=8
+2026-06-21 13:58:32 - strategy.Original - INFO -   002203.SZ: score=0.0086, rank=9
+2026-06-21 13:58:32 - strategy.Original - INFO -   688037.SH: score=0.0085, rank=10
+2026-06-21 13:58:32 - strategy.Original - INFO - Generating charts...
+2026-06-21 13:58:52 - strategy.Original - INFO - ============================================================
+2026-06-21 13:58:52 - strategy.Original - INFO - Strategy [Original] completed in 101.8s
+2026-06-21 13:58:52 - strategy.Original - INFO - ============================================================
