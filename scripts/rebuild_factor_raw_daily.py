@@ -1,5 +1,5 @@
 """
-用动态 CSI500 股票池 + 本地日 K + 历史财报重建 factor_raw_daily。
+用动态 CSI500 股票池 + 本地日 K（前复权） + 历史财报重建 factor_raw_daily。
 彻底消除股票池/财务数据未来函数。
 """
 import os
@@ -18,10 +18,11 @@ from factor_engine.database import save_dataframe, execute, read_sql
 UNIVERSE_CSV = 'config/csi500_universe_history.csv'
 FINANCIALS_PKL = 'cache/financials_all.pkl'
 ZIP_PATHS = ['全A日K/2024.zip', '全A日K/2025.zip', '全A日K/2026.zip']
+ADJ_FACTOR_ZIP = '全A日K/复权因子_前复权.zip'
 
 # 财报字段
 FINA_COLS_NEED = {
-    'fina_indicator': ['netprofit_yoy', 'op_yoy', 'current_ratio'],
+    'fina_indicator': ['netprofit_yoy', 'op_yoy', 'current_ratio', 'roe', 'roa', 'grossprofit_margin', 'assets_yoy'],
     'balancesheet': ['total_assets', 'total_cur_assets', 'total_cur_liab'],
     'income': ['revenue', 'operate_profit'],
     'cashflow': ['n_cashflow_act', 'c_pay_acq_const_fiolta', 'free_cashflow'],
@@ -33,8 +34,14 @@ OUTPUT_COLS = [
     'trade_date', 'code', 'market_cap', 'future_5d_return',
     'bp_lr', 'ep_deducted_ttm', 'fcfp_ttm', 'ocfp_ttm',
     'amount_mean_20d', 'asset_ln', 'revenues_ln', 'currentratio',
-    'ocf_to_operating_profit', 'price_chg1200d', 'price_chg120d', 'price_chg180d',
-    'capex2sales', 'netincome_chg1y', 'op_profit_chg1y'
+    'ocf_to_operating_profit', 'price_chg20d', 'price_chg60d', 'price_chg120d',
+    'price_chg180d', 'price_chg1200d',
+    'capex2sales', 'netincome_chg1y', 'op_profit_chg1y',
+    # 新增因子
+    'volatility_20d', 'volatility_120d',
+    'turnover_mean_20d', 'turnover_std_20d', 'turnover_ratio_20d_120d',
+    'rsi_14', 'price_bias_20d', 'amihud_20d',
+    'roe', 'roa', 'grossprofit_margin', 'assets_yoy'
 ]
 
 
@@ -58,15 +65,26 @@ def get_universe_for_date(universe_df, t):
     return avail[avail['trade_date'] == latest]['code'].unique().tolist()
 
 
+def _decode_csv(raw):
+    """尝试 utf-8-sig / gbk 解码 CSV 字节。"""
+    try:
+        return raw.decode('utf-8-sig')
+    except UnicodeDecodeError:
+        try:
+            return raw.decode('gbk')
+        except UnicodeDecodeError:
+            return raw.decode('utf-8-sig', errors='replace')
+
+
 def load_prices(codes_set):
-    """从本地 zip 读取指定股票池的全部日 K。"""
+    """从本地 zip 读取指定股票池的日 K，并用前复权因子调整价格。"""
+    # 1. 原始行情
     records = []
     for zpath in ZIP_PATHS:
         if not os.path.exists(zpath):
             log(f"Skip missing zip: {zpath}")
             continue
         with zipfile.ZipFile(zpath, 'r') as z:
-            # 构建文件名 -> code 映射
             mapping = {}
             for fname in z.namelist():
                 if not fname.endswith('.csv') or '__MACOSX' in fname:
@@ -76,18 +94,48 @@ def load_prices(codes_set):
                     mapping[code] = fname
             log(f"{zpath}: found {len(mapping)} target files")
             for code, fname in mapping.items():
-                raw = z.read(fname)
-                try:
-                    text = raw.decode('utf-8-sig')
-                except UnicodeDecodeError:
-                    text = raw.decode('utf-8-sig', errors='replace')
+                text = _decode_csv(z.read(fname))
                 df = pd.read_csv(io.StringIO(text))
                 df['code'] = code
                 df['trade_date'] = pd.to_datetime(df['datetime'])
-                keep = ['trade_date', 'code', 'close', 'amount', 'total_mv', 'pe_ttm', 'pb']
+                keep = ['trade_date', 'code', 'open', 'high', 'low', 'close',
+                        'volume', 'amount', 'turnover', 'turnover_free',
+                        'total_mv', 'pe_ttm', 'pb']
                 df = df[[c for c in keep if c in df.columns]].copy()
                 records.append(df)
-    return pd.concat(records, ignore_index=True)
+    price_df = pd.concat(records, ignore_index=True)
+
+    # 2. 前复权因子
+    log(f"Loading adj factors from {ADJ_FACTOR_ZIP}...")
+    adj_records = []
+    with zipfile.ZipFile(ADJ_FACTOR_ZIP, 'r') as z:
+        mapping = {}
+        for fname in z.namelist():
+            if not fname.endswith('.csv'):
+                continue
+            code = os.path.basename(fname).replace('.csv', '')
+            if code in codes_set:
+                mapping[code] = fname
+        log(f"  found {len(mapping)} adj factor files")
+        for code, fname in mapping.items():
+            text = _decode_csv(z.read(fname))
+            df = pd.read_csv(io.StringIO(text), header=None, skiprows=1,
+                             names=['code', 'trade_date', 'adj_factor'])
+            df['code'] = code
+            df['trade_date'] = pd.to_datetime(df['trade_date'], format='%Y%m%d')
+            adj_records.append(df[['trade_date', 'code', 'adj_factor']])
+    adj_df = pd.concat(adj_records, ignore_index=True)
+
+    # 3. merge 并复权
+    price_df = price_df.merge(adj_df, on=['trade_date', 'code'], how='left')
+    missing_adj = price_df['adj_factor'].isna().sum()
+    if missing_adj:
+        log(f"  Warning: {missing_adj} price rows missing adj_factor")
+    for col in ['open', 'high', 'low', 'close']:
+        if col in price_df.columns:
+            price_df[col] = price_df[col] * price_df['adj_factor']
+
+    return price_df
 
 
 def _to_date(s):
@@ -120,7 +168,6 @@ def load_financials():
             result[table] = pd.DataFrame(columns=['code'] + need_cols)
             continue
         big = pd.concat(rows, ignore_index=True)
-        # 选择需要的列 + 公告日期列
         date_cols = ['ann_date']
         if 'f_ann_date' in big.columns:
             date_cols.append('f_ann_date')
@@ -128,9 +175,7 @@ def load_financials():
         big = big[avail].copy()
         for c in date_cols:
             big[c] = big[c].apply(_to_date)
-        # 剔除公告日期缺失的记录，否则 merge_asof 会报错
         big = big.dropna(subset=date_cols)
-        # 按公告日期去重，保留 end_date 最大的一条
         if 'end_date' in big.columns:
             big = big.sort_values(['code'] + date_cols + ['end_date'])
         dedup_by = ['code'] + date_cols
@@ -148,7 +193,6 @@ def expand_financials_to_daily(fin_dfs, trade_dates):
         df = fin_dfs[table]
         if df.empty:
             continue
-        # 使用 f_ann_date 优先，否则 ann_date
         date_col = 'f_ann_date' if 'f_ann_date' in df.columns else 'ann_date'
         df = df.copy()
         df['ann_dt'] = pd.to_datetime(df[date_col])
@@ -180,24 +224,69 @@ def expand_financials_to_daily(fin_dfs, trade_dates):
     return merged
 
 
+def add_price_features(price_df):
+    """在价格数据上统一计算量价因子（rolling，避免逐日循环）。"""
+    price_df = price_df.copy()
+    price_df = price_df.sort_values(['code', 'trade_date'])
+
+    def _rsi(x, period=14):
+        delta = x.diff()
+        gain = delta.where(delta > 0, 0.0)
+        loss = -delta.where(delta < 0, 0.0)
+        avg_gain = gain.rolling(window=period, min_periods=10).mean()
+        avg_loss = loss.rolling(window=period, min_periods=10).mean()
+        rs = avg_gain / avg_loss.replace(0, np.nan)
+        return 100 - 100 / (1 + rs)
+
+    out = []
+    for code, g in price_df.groupby('code'):
+        g = g.sort_values('trade_date').copy()
+
+        # 日收益率（基于复权收盘价）
+        g['ret_1d'] = g['close'] / g['close'].shift(1) - 1
+
+        # 波动率
+        g['volatility_20d'] = g['ret_1d'].rolling(window=20, min_periods=15).std()
+        g['volatility_120d'] = g['ret_1d'].rolling(window=120, min_periods=60).std()
+
+        # 换手率
+        g['turnover_mean_20d'] = g['turnover'].rolling(window=20, min_periods=15).mean()
+        g['turnover_std_20d'] = g['turnover'].rolling(window=20, min_periods=15).std()
+        turnover_120 = g['turnover'].rolling(window=120, min_periods=60).mean()
+        g['turnover_ratio_20d_120d'] = g['turnover_mean_20d'] / turnover_120.replace(0, np.nan) - 1
+
+        # RSI / 均线偏离
+        g['rsi_14'] = _rsi(g['close'], period=14)
+        ma20 = g['close'].rolling(window=20, min_periods=15).mean()
+        g['price_bias_20d'] = (g['close'] - ma20) / ma20.replace(0, np.nan)
+
+        # Amihud 非流动性（日收益率绝对值 / 成交金额，单位：千元）
+        g['amihud_20d'] = (g['ret_1d'].abs() / g['amount'].replace(0, np.nan)).rolling(window=20, min_periods=15).mean()
+
+        out.append(g)
+
+    return pd.concat(out, ignore_index=True)
+
+
 def calc_factors(price_df, fin_daily, universe_df):
     """逐日计算因子。"""
     price_df = price_df.copy()
     price_df['trade_date_d'] = price_df['trade_date'].dt.date
 
-    # 预先把价格数据按股票分组，加速逐股查询
+    # 预计算价格特征
+    price_df = add_price_features(price_df)
+
+    # 按股票分组
     price_groups = {
         code: g.sort_values('trade_date').reset_index(drop=True)
         for code, g in price_df.groupby('code')
     }
 
     trade_dates = sorted(price_df['trade_date_d'].unique())
-    # 从第一个有 universe 的交易日开始；最后一个 universe 之后的交易日复用最后一期截面
     start_u = universe_df['trade_date'].min()
     trade_dates = [d for d in trade_dates if d >= start_u]
     log(f"Calc factors for {len(trade_dates)} trade dates")
 
-    # 预先把 fin_daily 按 trade_date 分组
     fin_by_date = {d: g for d, g in fin_daily.groupby('trade_date')}
 
     results = []
@@ -210,12 +299,10 @@ def calc_factors(price_df, fin_daily, universe_df):
         if today.empty:
             continue
 
-        # 合并当日财务数据
         fin_t = fin_by_date.get(t)
         if fin_t is not None:
             today = today.merge(fin_t, on='code', how='left')
 
-        # 每只股票分别计算动量/未来收益
         day_rows = []
         for _, row in today.iterrows():
             code = row['code']
@@ -242,6 +329,8 @@ def calc_factors(price_df, fin_daily, universe_df):
 
             closes = sub['close'].values
             amounts = sub['amount'].values
+            r['price_chg20d'] = close / closes[pos - 20] - 1 if pos >= 20 else np.nan
+            r['price_chg60d'] = close / closes[pos - 60] - 1 if pos >= 60 else np.nan
             r['price_chg120d'] = close / closes[pos - 120] - 1 if pos >= 120 else np.nan
             r['price_chg180d'] = close / closes[pos - 180] - 1 if pos >= 180 else np.nan
             r['price_chg1200d'] = close / closes[pos - 1200] - 1 if pos >= 1200 else np.nan
@@ -254,6 +343,12 @@ def calc_factors(price_df, fin_daily, universe_df):
 
             # 财务字段
             for c in ALL_FIN_COLS[1:]:
+                r[c] = row.get(c, np.nan)
+
+            # 量价新因子
+            for c in ['volatility_20d', 'volatility_120d', 'turnover_mean_20d',
+                      'turnover_std_20d', 'turnover_ratio_20d_120d', 'rsi_14',
+                      'price_bias_20d', 'amihud_20d']:
                 r[c] = row.get(c, np.nan)
 
             day_rows.append(r)
@@ -280,6 +375,12 @@ def compute_derived_factors(df):
     df['capex2sales'] = df['c_pay_acq_const_fiolta'] / df['revenue'].replace(0, np.nan)
     df['netincome_chg1y'] = df['netprofit_yoy'] / 100.0
     df['op_profit_chg1y'] = df['op_yoy'] / 100.0
+
+    # 财务新因子转换为小数形式
+    df['roe'] = df['roe'] / 100.0
+    df['roa'] = df['roa'] / 100.0
+    df['grossprofit_margin'] = df['grossprofit_margin'] / 100.0
+    df['assets_yoy'] = df['assets_yoy'] / 100.0
     return df
 
 
@@ -309,9 +410,6 @@ def main(start_date=None):
     log(f"Expanding financials to daily from {start_date} ({len(trade_dates)} dates)...")
     fin_daily = expand_financials_to_daily(fin_dfs, trade_dates)
     log(f"  fin_daily: {len(fin_daily)} rows")
-
-    # 让 universe 也限制在 start_date 之后
-    universe_df = universe_df[universe_df['trade_date'] >= start_date]
 
     log("Calculating factors...")
     df = calc_factors(price_df, fin_daily, universe_df)

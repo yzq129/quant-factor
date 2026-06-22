@@ -1,22 +1,29 @@
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
+*.egg-info/
 
-# Data & cache
-cache/*.pkl
-cache/*.zip
-*.zip
+# Virtual environments
+venv/
+.env/
 
-# Logs & results
+# IDE
+.vscode/
+.idea/
+
+# Logs & cache
 logs/
+cache/
+*.log
+
+# Output artifacts
 backtest_results/
 charts/
 
-# Jupyter
-.ipynb_checkpoints/
+# Local data (large binaries)
+全A日K/*.zip
+config/csi500_universe_history.csv
+stock_basic.csv
 
-# OS
-.DS_Store
-Thumbs.db
+# Secrets
+config/secrets.yaml

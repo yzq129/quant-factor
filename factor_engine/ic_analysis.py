@@ -11,15 +11,21 @@ FACTOR_NAMES = [
     'bp_lr', 'ep_deducted_ttm', 'fcfp_ttm', 'ocfp_ttm',
     'amount_mean_20d', 'asset_ln', 'revenues_ln',
     'currentratio', 'ocf_to_operating_profit',
-    'price_chg1200d', 'price_chg120d', 'price_chg180d',
-    'capex2sales', 'netincome_chg1y', 'op_profit_chg1y'
+    'price_chg20d', 'price_chg60d', 'price_chg120d',
+    'price_chg180d', 'price_chg1200d',
+    'capex2sales', 'netincome_chg1y', 'op_profit_chg1y',
+    'volatility_20d', 'volatility_120d',
+    'turnover_mean_20d', 'turnover_std_20d', 'turnover_ratio_20d_120d',
+    'rsi_14', 'price_bias_20d', 'amihud_20d',
+    'roe', 'roa', 'grossprofit_margin', 'assets_yoy'
 ]
 
 FACTOR_CATEGORIES = {
     'bp_lr': 'value', 'ep_deducted_ttm': 'value', 'fcfp_ttm': 'value', 'ocfp_ttm': 'value',
     'amount_mean_20d': 'tech', 'asset_ln': 'tech', 'revenues_ln': 'tech',
     'currentratio': 'quality', 'ocf_to_operating_profit': 'quality',
-    'price_chg1200d': 'momentum', 'price_chg120d': 'momentum', 'price_chg180d': 'momentum',
+    'price_chg20d': 'momentum', 'price_chg60d': 'momentum', 'price_chg120d': 'momentum',
+    'price_chg180d': 'momentum', 'price_chg1200d': 'momentum',
     'capex2sales': 'growth', 'netincome_chg1y': 'growth', 'op_profit_chg1y': 'growth'
 }
 

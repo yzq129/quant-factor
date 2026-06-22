@@ -113,10 +113,23 @@ def run_all(top_n, freq, output_dir):
     return results, metrics_df
 
 
+def _merge_records(results, col):
+    """把各策略的 records 按 rebalance_date 对齐合并。"""
+    merged = None
+    for name, records in results.items():
+        sub = records[['rebalance_date', col]].rename(columns={col: name})
+        if merged is None:
+            merged = sub
+        else:
+            merged = merged.merge(sub, on='rebalance_date', how='outer')
+    merged = merged.sort_values('rebalance_date').reset_index(drop=True)
+    return merged
+
+
 def plot_comparison(results, bench_records, output_dir):
     """绘制多策略对比图"""
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-    
+
     # 1. 净值曲线
     ax = axes[0, 0]
     for name, records in results.items():
@@ -128,22 +141,27 @@ def plot_comparison(results, bench_records, output_dir):
     ax.set_ylabel('NAV')
     ax.legend()
     ax.grid(True, alpha=0.3)
-    
-    # 2. 每期收益
+
+    # 2. 每期收益（按共同日期对齐）
     ax = axes[0, 1]
-    names = list(results.keys())
-    width = 0.8 / (len(names) + 1)
-    x = range(len(results[names[0]]))
+    merged = _merge_records(results, 'net_return')
+    names = [c for c in merged.columns if c != 'rebalance_date']
+    width = 0.8 / len(names)
+    x = range(len(merged))
     for i, name in enumerate(names):
         offset = (i - len(names) / 2) * width
-        ax.bar([j + offset for j in x], results[name]['net_return'] * 100,
+        ax.bar([j + offset for j in x], merged[name] * 100,
                alpha=0.6, label=name, width=width)
     ax.set_title('Period Net Return (%)')
     ax.set_xlabel('Period')
     ax.set_ylabel('Return (%)')
+    tick_step = max(1, len(merged) // 10)
+    ax.set_xticks(x[::tick_step])
+    ax.set_xticklabels([d.strftime('%m-%d') for d in merged['rebalance_date'][::tick_step]],
+                       rotation=45, ha='right')
     ax.legend()
     ax.grid(True, alpha=0.3)
-    
+
     # 3. 回撤
     ax = axes[1, 0]
     for name, records in results.items():
@@ -161,18 +179,20 @@ def plot_comparison(results, bench_records, output_dir):
     ax.set_ylabel('Drawdown (%)')
     ax.legend()
     ax.grid(True, alpha=0.3)
-    
-    # 4. 换手率
+
+    # 4. 换手率（按共同日期对齐）
     ax = axes[1, 1]
-    for name, records in results.items():
-        ax.plot(records['rebalance_date'], records['turnover'] * 100,
-                label=name, linewidth=1.5)
+    merged_turn = _merge_records(results, 'turnover')
+    names_turn = [c for c in merged_turn.columns if c != 'rebalance_date']
+    for name in names_turn:
+        ax.plot(merged_turn['rebalance_date'], merged_turn[name] * 100,
+                label=name, linewidth=1.5, marker='o', markersize=2)
     ax.set_title('Turnover per Rebalance (%)')
     ax.set_xlabel('Date')
     ax.set_ylabel('Turnover (%)')
     ax.legend()
     ax.grid(True, alpha=0.3)
-    
+
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, 'backtest_comparison.png'), dpi=150)
     plt.close()

@@ -3,6 +3,7 @@
 提供事件驱动的简单回测框架
 """
 import os
+import io
 import zipfile
 from datetime import datetime
 
@@ -64,7 +65,7 @@ class BacktestEngine:
         return self.costs['commission'] + self.costs['stamp_tax'] + self.costs['slippage']
     
     def load_prices(self, codes=None, zip_paths=None):
-        """从本地 zip 读取开盘价、收盘价"""
+        """从本地 zip 读取开盘价、收盘价，并用前复权因子调整"""
         if codes is None:
             codes = set(self.score_df['code'].unique())
         else:
@@ -105,6 +106,36 @@ class BacktestEngine:
         
         df = pd.concat(all_data, ignore_index=True)
         df = df.rename(columns={'datetime': 'trade_date'})
+        
+        # 加载前复权因子
+        adj_zip = '全A日K/复权因子_前复权.zip'
+        self.logger.info(f"  Loading adj factors from {adj_zip}...")
+        adj_data = []
+        with zipfile.ZipFile(adj_zip, 'r') as z:
+            for fname in z.namelist():
+                if not fname.endswith('.csv'):
+                    continue
+                code = os.path.basename(fname).replace('.csv', '')
+                if code in codes:
+                    try:
+                        raw = z.read(fname)
+                        try:
+                            text = raw.decode('utf-8-sig')
+                        except UnicodeDecodeError:
+                            text = raw.decode('gbk')
+                    except Exception:
+                        text = raw.decode('utf-8-sig', errors='replace')
+                    adj_df = pd.read_csv(io.StringIO(text), header=None, skiprows=1,
+                                         names=['code', 'trade_date', 'adj_factor'])
+                    adj_df['trade_date'] = pd.to_datetime(adj_df['trade_date'], format='%Y%m%d')
+                    adj_data.append(adj_df)
+        
+        if adj_data:
+            adj_df = pd.concat(adj_data, ignore_index=True)
+            df = df.merge(adj_df, on=['trade_date', 'code'], how='left')
+            for col in ['open', 'close']:
+                df[col] = df[col] * df['adj_factor']
+        
         df = df.sort_values(['code', 'trade_date'])
         self.close_df = df
         self.logger.info(f"  Loaded {len(df)} price records, {df['code'].nunique()} stocks")

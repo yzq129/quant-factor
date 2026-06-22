@@ -3,6 +3,7 @@
 提供中证500等权基准等对比指标
 """
 import os
+import io
 import zipfile
 
 import numpy as np
