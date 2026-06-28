@@ -1,6 +1,6 @@
 """
 挖掘增强多因子策略 (V2)
-基础 15 个因子 + factor_mining_v2 挖掘的因子 + LightGBM
+29 个基础因子 + factor_mining_v2 生成的历史时序挖掘因子 + 滚动 LightGBM
 """
 import pandas as pd
 
