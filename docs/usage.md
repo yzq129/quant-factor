@@ -51,7 +51,7 @@ D:\vnstudio2026\python.exe scripts/run_pipeline.py pure_ic
 D:\vnstudio2026\python.exe scripts/run_pipeline.py all
 ```
 
-> 注意：`mined` 策略依赖 `factor_processed_daily` 和 `factor_mined_daily`，请先确保原始策略和因子挖掘已生成数据。
+> 注意：`mined` 策略依赖 `factor_processed_daily` 和 `factor_mined_daily`，请先确保 `original` 策略和因子挖掘已生成数据。`factor_mining_v2` 仅生成历史时序特征，不再基于全历史 IC 筛选因子。
 
 ## 3. 运行回测
 
@@ -171,9 +171,9 @@ class MyStrategy(BaseStrategy):
 D:\vnstudio2026\python.exe factor_engine/factor_mining_v2.py
 ```
 
-### Q2: 回测收益特别高
+### Q2: 回测收益能否直接外推？
 
-当前框架尚未修复未来函数（全样本 LightGBM 训练 + 固定 CSI500 成分股），因此 V1 / V2 回测收益不可直接外推。详情请参阅 `docs/architecture.md` 的“已知限制”章节。
+本项目已修复主要未来函数：动态 CSI500 成分股池、滚动 LightGBM 训练、时序挖掘因子仅使用历史窗口。但 `Pure_IC` 与 `Mined` 的因子筛选仍基于全历史 IC 权重；且本版本未做行业中性化，组合存在行业 beta 暴露。回测结果仅供参考，详情请参阅 `docs/architecture.md` 的“已知限制”章节。
 
 ### Q3: 如何查看日志？
 
