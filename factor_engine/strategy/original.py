@@ -1,6 +1,6 @@
 """
 原始多因子策略 (V1)
-使用 factor_calc.py 中的 15 个基础因子 + LightGBM
+使用 29 个基础因子 + 滚动 LightGBM
 """
 import os
 import sys
@@ -19,7 +19,7 @@ class OriginalStrategy(BaseStrategy):
         super().__init__(name='Original')
     
     def get_factor_names(self):
-        """返回 15 个基础因子"""
+        """返回 29 个基础因子"""
         return list(FACTOR_NAMES)
     
     def get_table_suffix(self):
