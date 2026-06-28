@@ -10,7 +10,7 @@
 │   └── __init__.py
 ├── factor_engine/               # 因子研究与策略实现
 │   ├── config.py                # 配置加载器
-│   ├── factor_calc.py           # 因子计算（15个基础因子）
+│   ├── factor_calc.py           # 因子计算（29个基础因子）
 │   ├── factor_mining_v2.py      # 因子挖掘
 │   ├── preprocess.py            # 数据预处理
 │   ├── ic_analysis.py           # IC 计算与因子筛选
@@ -55,7 +55,7 @@
 factor_raw_daily  ──►  factor_engine.data.db.read_sql()
     │
     ▼
-预处理（MAD 去极值 → 市值中性化 → Z-Score）
+预处理（MAD 去极值 → 市值中性化 → Z-Score；本版本未做行业中性化）
     │
     ▼
 factor_processed_daily / factor_processed_daily_v2
@@ -109,9 +109,9 @@ IC 分析 + 相关性过滤 + VIF
 - 子类只需覆盖少量方法即可定义新策略
 
 ### `factor_engine.strategy.original / mined / pure_ic`
-- `OriginalStrategy`: 15 个基础因子 + LightGBM，表后缀 `''`
-- `MinedStrategy`: 基础 + 挖掘因子 + LightGBM，表后缀 `_v2`
-- `PureICStrategy`: 15 个基础因子，仅 IC 权重，表后缀 `_pure_ic`
+- `OriginalStrategy`: 29 个基础因子 + 滚动 LightGBM，表后缀 `''`
+- `MinedStrategy`: 29 个基础因子 + 时序挖掘因子 + 滚动 LightGBM，表后缀 `_v2`
+- `PureICStrategy`: 29 个基础因子，仅 IC 权重，表后缀 `_pure_ic`
 
 ### `backtest.engine`
 - `BacktestEngine`: 事件驱动回测
@@ -124,6 +124,7 @@ IC 分析 + 相关性过滤 + VIF
 
 ## 4. 已知限制
 
-- **未来函数尚未修复**：当前 LightGBM 在样本内全量训练，CSI500 成分股使用固定日期（2026-05-29）。这使得 V1 / V2 回测收益显著偏高，**不代表实盘可复现结果**。
-- **纯 IC 策略** 仍使用全样本 IC 权重和未来固定的股票池，仅用于剥离 LightGBM 贡献。
-- 这些问题已记录，计划在下一阶段用滚动训练 + 动态成分股方案解决。
+- 本项目已尽量避免主要未来函数：`factor_raw_daily` 使用动态 CSI500 成分股池，`Original` / `Mined` 的 LightGBM 使用滚动训练，`factor_mining_v2` 仅基于历史窗口生成时序特征。
+- **纯 IC 策略** 仍使用全历史 IC 权重估计，严格样本外可进一步改为滚动窗口 IC。
+- 本版本 **未做行业中性化**，组合存在行业偏置，回测收益中包含行业 beta 暴露。
+- 回测结果仅供参考，不代表实盘可复现结果。
