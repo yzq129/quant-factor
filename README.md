@@ -32,9 +32,9 @@ D:\vnstudio2026\python.exe scripts/run_backtest.py --strategy all
 
 | 策略 | 说明 | 输出表 |
 |------|------|--------|
-| Original (V1) | 15 个基础因子 + LightGBM | `stock_score_daily` |
-| Mined (V2) | 15 个基础因子 + 挖掘因子 + LightGBM | `stock_score_daily_v2` |
-| Pure IC | 15 个基础因子，仅 IC 加权 | `stock_score_daily_pure_ic` |
+| Original | 29 个基础因子 + 滚动 LightGBM | `stock_score_daily` |
+| Mined (V2) | 29 个基础因子 + 时序挖掘因子 + 滚动 LightGBM | `stock_score_daily_v2` |
+| Pure IC | 29 个基础因子，仅 IC 加权 | `stock_score_daily_pure_ic` |
 
 ## 数据
 
@@ -44,9 +44,15 @@ D:\vnstudio2026\python.exe scripts/run_backtest.py --strategy all
 
 ## 重要提示
 
-> **当前版本存在未来函数问题**：LightGBM 在全样本上训练，CSI500 成分股使用固定日期（2026-05-29）。这导致 Original 和 Mined 策略的回测收益显著偏高，**不代表实盘可复现收益**。该问题已记录在案，计划在下一阶段通过滚动训练和动态成分股解决。
+本项目在因子构建与模型训练环节已尽量避免未来函数：
 
-Pure IC 策略用于剥离 LightGBM 的贡献，但仍使用全样本 IC 权重和固定股票池，仅作对比参考。
+- **动态股票池**：`factor_raw_daily` 基于月末 CSI500 成分股截面动态复用，避免使用固定未来成分股。
+- **滚动 LightGBM**：`Original` 与 `Mined` 策略在每个交易日使用过去 N 个交易日数据训练模型，杜绝全样本训练。
+- **时序挖掘因子**：`factor_mining_v2` 仅基于历史滚动窗口生成均值/标准差/趋势等时序特征，不再基于全历史 IC 筛选因子。
+
+> **本分支为未行业中性化版本**：预处理阶段未按行业分组做市值中性化，组合在行业上存在偏置（例如银行、证券占比可能较高），回测收益中包含较多行业 beta 暴露。若需查看行业中性化版本，可在 `industry-neutralized` 标签/分支中对比。
+
+> **仍需注意**：`Pure_IC` 策略的因子权重仍基于全历史 IC/IR 估计；`Mined` 策略端在因子筛选时同样使用全历史 IC。回测结果仅供参考，不代表实盘可复现收益。
 
 ## 依赖
 
